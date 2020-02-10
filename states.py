@@ -1,0 +1,167 @@
+import tcod.event
+
+from entities import Settler
+from gui import GUI
+
+
+class State:
+    def __init__(self, gui_state, event_handler):
+        self.gui_state = gui_state
+        self.event_handler = event_handler
+
+
+class BaseState(State):
+    def __init__(self, game):
+        super().__init__(GUI.render_base, BaseEventHandler(game))
+        self.game = game
+
+
+class InspectTile(State):
+    def __init__(self, game, tile):
+        super().__init__(GUI.render_inspect_tile, BaseEventHandler(game))
+        self.tile = tile
+
+
+class InspectEntity(State):
+    def __init__(self, game, entity, tile):
+        super().__init__(GUI.render_inspect_entity, InspectEntityEventHandler(game))
+        self.entity = entity
+        self.tile = tile
+        self.move = False
+
+
+class MoveEntity(State):
+    def __init__(self, game, entity):
+        super().__init__(GUI.render_move_entity, MoveEntityEventHandler(game))
+        self.entity = entity
+
+
+class SettleCity(State):
+    def __init__(self, game, entity):
+        super().__init__(GUI.render_settle_city, SettleCityEventHandler(game))
+        self.entity = entity
+
+
+class EventHandler(tcod.event.EventDispatch):
+    def __init__(self, game):
+        self.game = game
+
+    def ev_quit(self, event):
+        raise SystemExit()
+
+    def ev_keydown(self, event):
+        pass
+
+    def ev_mousebuttondown(self, event):
+        pass
+
+    def ev_mousemotion(self, event):
+        pass
+
+
+class BaseEventHandler(EventHandler):
+    """ Event handler for the base game. """
+    def __init__(self, game):
+        super().__init__(game)
+
+    def ev_keydown(self, event):
+        if event.sym == 32:  # spacebar key
+            self.game.pass_turn()
+
+    def ev_mousebuttondown(self, event):
+        """ 1: Left mouse button
+            2: Middle mouse button
+            3: Right mouse button """
+        if event.button == 1:
+            x, y = event.tile.x, event.tile.y
+            entity = self.game.get_entity_by_pos(x, y)
+            tile = self.game.game_map.get_tile(x, y)
+
+            if entity and tile:
+                self.game.set_state(InspectEntity(self.game, entity, tile))
+                return
+            if tile:
+                self.game.set_state(InspectTile(self.game, tile))
+
+        elif event.button == 2:
+            pass
+        elif event.button == 3:
+            """ Place a Settler for debugging purposes. """
+            x, y = event.tile.x, event.tile.y
+            self.game.add_entity(Settler(x, y))
+
+
+class InspectEntityEventHandler(BaseEventHandler):
+    """ Event handler for when an entity has been clicked and is being inspected. """
+    def __init__(self, game):
+        super().__init__(game)
+
+    def ev_keydown(self, event):
+        """ M key: Starts the MoveEntity state.
+        N key: Starts the SettleCity state. """
+        entity = self.game.state.entity
+        if event.sym == 109:  # M key
+            self.game.set_state(MoveEntity(self.game, entity))
+
+        if event.sym == 110 and entity.turn_into_tile:  # N key
+            self.game.set_state(SettleCity(self.game, entity))
+
+        super().ev_keydown(event)
+
+
+class MoveEntityEventHandler(EventHandler):
+    """ Event handler for when the player decides to move an entity. """
+    def __init__(self, game):
+        super().__init__(game)
+        self.path_len = 0
+
+    def ev_keydown(self, event):
+        """ M key: Cancels the MoveEntity state and goes back to InspectEntity. """
+        entity = self.game.state.entity
+        if event.sym == 109:  # M key for Move
+            tile = self.game.game_map.get_tile(entity.x, entity.y)
+            self.game.set_state(InspectEntity(self.game, entity, tile))
+
+        super().ev_keydown(event)
+
+    def ev_mousebuttondown(self, event):
+        """ Generates a path for the entity to travel to where the mouse was clicked. """
+        if event.button == 1:
+            x, y = event.tile.x, event.tile.y
+            entity = self.game.state.entity
+            path = self.game.get_entity_move_path(entity, x, y)
+            if len(path) > 0:
+                entity.move_path = path
+                self.game.set_state(BaseState(self.game))
+
+    def ev_mousemotion(self, event):
+        """ Generates a path cost. """
+        x, y = event.tile.x, event.tile.y
+        entity = self.game.state.entity
+        self.path_len = len(self.game.get_entity_move_path(entity, x, y))
+        tcod.console_print(0, x, y, "M")
+
+class SettleCityEventHandler(EventHandler):
+    """ Event handler for when an entity is settling a city. """
+    def __init__(self, game):
+        super().__init__(game)
+        self.city_name = ""
+
+    def ev_keydown(self, event):
+        """ ESC key: Cancels the SettleCity state and goes back to InspectEntity.
+        ENTER key: Settles the city. """
+        entity = self.game.state.entity
+        tile = self.game.game_map.get_tile(entity.x, entity.y)
+        if event.sym == 27 and entity.turn_into_tile:  # ESC key
+            self.game.set_state(InspectEntity(self.game, entity, tile))
+        elif event.sym == 13 and len(self.city_name) > 1:
+            self.game.settle_city(self.city_name, entity)
+            self.game.set_state(BaseState(self.game))
+        else:
+            pass
+
+        super().ev_keydown(event)
+
+    def ev_textinput(self, event):
+        """ Allows user to type in the city name. """
+        self.city_name += event.text
