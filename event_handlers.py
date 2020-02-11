@@ -22,7 +22,7 @@ class EventHandler(tcod.event.EventDispatch):
         if event.button == 1:
             x, y = event.tile.x, event.tile.y
             entity = self.game.get_entity_by_pos(x, y)
-            tile = self.game.game_map.get_tile(x, y)
+            tile = self.game.game_map.get_tile_by_pos(x, y)
 
             if entity and tile:
                 self.game.set_state(InspectEntity(entity, tile))

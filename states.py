@@ -42,6 +42,12 @@ class SettleCity(State):
         self.entity = entity
 
 
+class Attack(State):
+    def __init__(self, game, entity):
+        super().__init__(GUI.render_attack, AttackEventHandler(game))
+        self.entity = entity
+
+
 class EventHandler(tcod.event.EventDispatch):
     def __init__(self, game):
         self.game = game
@@ -75,7 +81,7 @@ class BaseEventHandler(EventHandler):
         if event.button == 1:
             x, y = event.tile.x, event.tile.y
             entity = self.game.get_entity_by_pos(x, y)
-            tile = self.game.game_map.get_tile(x, y)
+            tile = self.game.game_map.get_tile_by_pos(x, y)
 
             if entity and tile:
                 self.game.set_state(InspectEntity(self.game, entity, tile))
@@ -100,6 +106,8 @@ class InspectEntityEventHandler(BaseEventHandler):
         """ M key: Starts the MoveEntity state.
         N key: Starts the SettleCity state. """
         entity = self.game.state.entity
+        if event.sym == 97:  # A key
+            self.game.set_state(Attack(self.game, entity))
         if event.sym == 109:  # M key
             self.game.set_state(MoveEntity(self.game, entity))
 
@@ -113,16 +121,14 @@ class MoveEntityEventHandler(EventHandler):
     """ Event handler for when the player decides to move an entity. """
     def __init__(self, game):
         super().__init__(game)
-        self.path_len = 0
+        self.path_cost = 0
 
     def ev_keydown(self, event):
-        """ M key: Cancels the MoveEntity state and goes back to InspectEntity. """
+        """ ESC key: Cancels the MoveEntity state and goes back to InspectEntity. """
         entity = self.game.state.entity
-        if event.sym == 109:  # M key for Move
-            tile = self.game.game_map.get_tile(entity.x, entity.y)
+        if event.sym == 27:  # ESC key
+            tile = self.game.game_map.get_tile_by_pos(entity.x, entity.y)
             self.game.set_state(InspectEntity(self.game, entity, tile))
-
-        super().ev_keydown(event)
 
     def ev_mousebuttondown(self, event):
         """ Generates a path for the entity to travel to where the mouse was clicked. """
@@ -138,8 +144,9 @@ class MoveEntityEventHandler(EventHandler):
         """ Generates a path cost. """
         x, y = event.tile.x, event.tile.y
         entity = self.game.state.entity
-        self.path_len = len(self.game.get_entity_move_path(entity, x, y))
-        tcod.console_print(0, x, y, "M")
+        self.path_cost = int((len(self.game.get_entity_move_path(entity, x, y)))/entity.movement)
+        tcod.console_set_char_background(0, x, y, entity.fg_color)
+        tcod.console_set_char_foreground(0, x, y, entity.fg_color)
 
 class SettleCityEventHandler(EventHandler):
     """ Event handler for when an entity is settling a city. """
@@ -151,7 +158,7 @@ class SettleCityEventHandler(EventHandler):
         """ ESC key: Cancels the SettleCity state and goes back to InspectEntity.
         ENTER key: Settles the city. """
         entity = self.game.state.entity
-        tile = self.game.game_map.get_tile(entity.x, entity.y)
+        tile = self.game.game_map.get_tile_by_pos(entity.x, entity.y)
         if event.sym == 27 and entity.turn_into_tile:  # ESC key
             self.game.set_state(InspectEntity(self.game, entity, tile))
         elif event.sym == 13 and len(self.city_name) > 1:
@@ -165,3 +172,25 @@ class SettleCityEventHandler(EventHandler):
     def ev_textinput(self, event):
         """ Allows user to type in the city name. """
         self.city_name += event.text
+
+class AttackEventHandler(EventHandler):
+    """ Event handler for when an entity is settling a city. """
+    def __init__(self, game):
+        super().__init__(game)
+
+    def ev_keydown(self, event):
+        """ ESC key: Cancels the Attack state and goes back to InspectEntity. """
+        entity = self.game.state.entity
+        tile = self.game.game_map.get_tile_by_pos(entity.x, entity.y)
+        if event.sym == 27:  # ESC key
+            self.game.set_state(InspectEntity(self.game, entity, tile))
+
+    def ev_mousebuttondown(self, event):
+        """ Attempts to attack a target within range. """
+        if event.button == 1:
+            x, y = event.tile.x, event.tile.y
+            entity = self.game.state.entity
+            success = self.game.set_entity_attack(entity, x, y)
+            if success:
+                tile = self.game.game_map.get_tile_by_pos(entity.x, entity.y)
+                self.game.set_state(InspectEntity(self.game, entity, tile))

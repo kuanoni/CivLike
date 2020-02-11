@@ -1,10 +1,12 @@
 import tcod
 import tcod.path
 
+from entities import Settler, Warrior
 from gui import GUI
 from map import Map
 from states import BaseState, State
 from tile import CityTile
+import random
 
 
 class Game:
@@ -14,7 +16,12 @@ class Game:
         self.state = BaseState(self)
 
         self.game_map = Map(self.game_console.width, self.game_console.height)
-        self.entities = []
+        self.teams = ["RED_TEAM", "BLUE_TEAM"]
+        self.team_entities = {}
+        for team in self.teams:
+            self.team_entities[team] = []
+        self.place_team("RED_TEAM")
+        self.place_team("BLUE_TEAM")
 
         self.turn = 0
 
@@ -22,28 +29,61 @@ class Game:
         """ Sets the game state. """
         self.state = state
 
-    def add_entity(self, entity):
+    def add_entity(self, team, entity):
         """ Adds entity. """
-        if entity:
-            self.entities.append(entity)
+        if team and entity:
+            self.team_entities[team].append(entity)
 
     def remove_entity(self, entity):
         """ Removes entity. """
-        i_remove = self.entities.index(entity)
-        self.entities.pop(i_remove)
+        entity_to_remove = None
+        for team in self.team_entities.keys():
+            for _entity in self.team_entities[team]:
+                if _entity is entity:
+                    i = self.team_entities[team].index(_entity)
+                    self.team_entities[team].pop(i)
+                    break
 
     def get_entity_by_pos(self, x, y):
         """ Get an entity by it's x and y coordinates. """
-        for entity in self.entities:
-            if entity.x == x and entity.y == y:
-                return entity
-        return False
+        for team in self.team_entities.keys():
+            for entity in self.team_entities[team]:
+                if entity.x == x and entity.y == y:
+                    return entity
+        return None
 
     def move_entity(self, entity):
         """ Moves an entity using it's move_path, which is generated from A* pathfinding. """
         if len(entity.move_path) > 0:
-            pos = entity.move_path.pop(0)
-            entity.x, entity.y = pos
+            move_costs = []
+            for pos in entity.move_path:
+                move_costs.append(self.game_map.get_tile_by_pos(pos[0], pos[1]).move_penalty)
+
+            move_to = (0, 0)
+            total_cost = 0.0
+            for i, cost in enumerate(move_costs):
+                total_cost += cost
+                if total_cost > entity.movement:
+                    move_to = entity.move_path[i]
+                    break
+
+            if move_to == (0, 0):
+                print(entity.move_path)
+                entity.move_path = []
+                return
+
+            entity.x, entity.y = move_to
+            index = entity.move_path.index(move_to)
+            entity.move_path = entity.move_path[index:]
+
+
+
+        # if len(entity.move_path) > 0:
+        #     for _ in range(entity.movement):
+        #         if len(entity.move_path) < 1:
+        #             return
+        #         pos = entity.move_path.pop(0)
+        #         entity.x, entity.y = pos
 
     def get_entity_move_path(self, entity, dest_x, dest_y):
         """ Generate an A* path for an entity, to a destination. """
@@ -56,16 +96,54 @@ class Game:
         path = astar.get_path(entity.x, entity.y, dest_x, dest_y)
         return path
 
+    def set_entity_attack(self, entity, x, y):
+        """ Entity attempts to attack the target at (x, y). """
+        target = self.get_entity_by_pos(x, y)
+        if not target:
+            return False
+        if target.team == entity.team:
+            return False
+        if target.x in range(entity.x-entity.atk_range, entity.x+entity.atk_range+1) and \
+            target.y in range(entity.y-entity.atk_range, entity.y+entity.atk_range+1):
+            """ Damage calculations
+                TODO:
+                - Include terrain defense bonuses
+                - Include health based damage
+            """
+            target.hp -= int(entity.atk * (1-self.game_map.get_tile_by_pos(entity.x, entity.y).defense_bonus))
+            entity.hp -= target.atk
+            return True
+
+
+    def place_team(self, team):
+        pos = self.game_map.get_random_open_tile_pos()
+        adj_tiles = self.game_map.get_adjacent_tiles_by_pos(pos[0], pos[1])
+        keys_to_rem = []
+        valid_keys = []
+        for k, tile in adj_tiles.items():
+            if tile is None or tile.blocked:
+                keys_to_rem.append(k)
+            else:
+                valid_keys.append(k)
+
+        for k in keys_to_rem:
+            adj_tiles.pop(k)
+        random.shuffle(valid_keys)
+        war_x, war_y = valid_keys[0]
+        self.add_entity(team, Settler(team, pos[0], pos[1]))
+        self.add_entity(team, Warrior(team, war_x, war_y))
+
     def pass_turn(self):
         """ Pass a game turn. """
-        for entity in self.entities:
-            self.move_entity(entity)
+        for team in self.teams:
+            for entity in self.team_entities[team]:
+                self.move_entity(entity)
         self.turn += 1
         self.state = BaseState(self)
 
     def settle_city(self, name, entity):
         """ Turn an entity into a city. """
-        self.game_map.add_tile(CityTile(name[1:]), entity.x, entity.y)
+        self.game_map.add_tile(CityTile(name[1:], entity.team), entity.x, entity.y)
         self.remove_entity(entity)
 
     def _is_pos_blocked(self, x, y):
@@ -78,7 +156,8 @@ class Game:
     def render(self, root_console):
         """ Render to root console. """
         self.game_map.render(self.game_console)
-        for entity in self.entities:
-            self.game_console.print(entity.x, entity.y, entity.char, entity.fg_color)
+        for team, entities in self.team_entities.items():
+            for entity in entities:
+                self.game_console.print(entity.x, entity.y, entity.char, entity.fg_color)
         self.game_console.blit(root_console, 0, 0, 0, 0, self.game_console.width, self.game_console.height)
         self.gui.render(self.state)

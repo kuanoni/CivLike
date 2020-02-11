@@ -37,8 +37,10 @@ class Engine:
         tcod.console_map_string_to_font("☺", 2, 0)
         tcod.console_map_string_to_font("♣", 5, 0)
         tcod.console_map_string_to_font("░", 2, 11)
+        tcod.console_map_string_to_font("▓", 1, 11)
         tcod.console_map_string_to_font("Ω", 10, 14)
         tcod.console_map_string_to_font("▲", 14, 1)
+        tcod.console_map_string_to_font("◊", 4, 0)
 
 
 if __name__ == '__main__':
