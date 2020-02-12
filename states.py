@@ -144,7 +144,6 @@ class MoveEntityEventHandler(EventHandler):
         """ Generates a path cost. """
         x, y = event.tile.x, event.tile.y
         entity = self.game.state.entity
-        self.path_cost = int((len(self.game.get_entity_move_path(entity, x, y)))/entity.movement)
         tcod.console_set_char_background(0, x, y, entity.fg_color)
         tcod.console_set_char_foreground(0, x, y, entity.fg_color)
 

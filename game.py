@@ -36,7 +36,6 @@ class Game:
 
     def remove_entity(self, entity):
         """ Removes entity. """
-        entity_to_remove = None
         for team in self.team_entities.keys():
             for _entity in self.team_entities[team]:
                 if _entity is entity:
@@ -52,38 +51,33 @@ class Game:
                     return entity
         return None
 
+    def get_entity_path_cost(self, entity, path=None):
+        if path is None:
+            path = entity.move_path
+        move_costs = []
+        if len(entity.move_path) > 0:
+            for pos in path:
+                move_costs.append(self.game_map.get_tile_by_pos(pos[0], pos[1]).move_penalty)
+
+        return move_costs
+
     def move_entity(self, entity):
         """ Moves an entity using it's move_path, which is generated from A* pathfinding. """
         if len(entity.move_path) > 0:
-            move_costs = []
-            for pos in entity.move_path:
-                move_costs.append(self.game_map.get_tile_by_pos(pos[0], pos[1]).move_penalty)
+            move_costs = self.get_entity_path_cost(entity)
 
             move_to = (0, 0)
-            total_cost = 0.0
-            for i, cost in enumerate(move_costs):
-                total_cost += cost
-                if total_cost > entity.movement:
-                    move_to = entity.move_path[i]
-                    break
+            move_points = float(entity.movement)
 
-            if move_to == (0, 0):
-                print(entity.move_path)
-                entity.move_path = []
-                return
+            for i, cost in enumerate(move_costs):
+                if cost > move_points:
+                    break
+                move_to = entity.move_path[i]
+                move_points -= cost
 
             entity.x, entity.y = move_to
             index = entity.move_path.index(move_to)
-            entity.move_path = entity.move_path[index:]
-
-
-
-        # if len(entity.move_path) > 0:
-        #     for _ in range(entity.movement):
-        #         if len(entity.move_path) < 1:
-        #             return
-        #         pos = entity.move_path.pop(0)
-        #         entity.x, entity.y = pos
+            entity.move_path = entity.move_path[index+1:]
 
     def get_entity_move_path(self, entity, dest_x, dest_y):
         """ Generate an A* path for an entity, to a destination. """

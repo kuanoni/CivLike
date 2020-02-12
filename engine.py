@@ -2,7 +2,6 @@ import tcod
 import tcod.event
 import tcod.console
 
-from event_handlers import EventHandler
 from game import Game
 
 class Engine:
@@ -17,7 +16,6 @@ class Engine:
         )
 
         self.game = Game(self.root_console)
-        self.event_handler = EventHandler(self.game)
 
         self._map_fonts()
 
