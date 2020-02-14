@@ -25,17 +25,18 @@ class Map:
         return tiles
 
     def populate_map(self):
+        """ Populate the map with terrain. """
         for i in range(5):
-            x, y = self.add_hills(MountainTile)
-            self.add_hills(MountainTile, x=x, y=y)
+            x, y = self.add_terrain(MountainTile)
+            self.add_terrain(MountainTile, x=x, y=y)
         for i in range(15):
-            x, y = self.add_hills()
-            self.add_hills(x=x, y=y)
+            x, y = self.add_terrain(HillTile)
+            self.add_terrain(HillTile, x=x, y=y)
         for i in range(20):
-            x, y = self.add_hills(ForestTile)
-            self.add_hills(ForestTile, x=x, y=y)
+            x, y = self.add_terrain(ForestTile)
+            self.add_terrain(ForestTile, x=x, y=y)
 
-    def add_hills(self, tile_to_add=HillTile, x=0, y=0):
+    def add_terrain(self, tile_to_add, x=0, y=0):
         if x == 0 and y == 0:
             x, y = self.get_random_open_tile_pos()
         adj_tiles = self.get_adjacent_tiles_by_pos(x, y)
@@ -51,7 +52,7 @@ class Map:
             adj_tiles.pop(k)
 
         random.shuffle(valid_positions)
-        i = int(len(valid_positions)/2)
+        i = int(len(valid_positions) / 2)
         valid_positions = valid_positions[i:]
 
         for pos in valid_positions:
@@ -59,7 +60,8 @@ class Map:
 
         return valid_positions[-1]
 
-    def render(self, console, offset_x=0, offset_y=0):
+    def render(self, console):
+        """ Render the game map. """
         for y in range(self.height):
             for x in range(self.width):
                 tile = self.tiles[x][y]
@@ -67,7 +69,7 @@ class Map:
 
     def get_tile_by_pos(self, x, y):
         """ Returns tile from map position. """
-        if x > self.width-1 or y > self.height:
+        if x > self.width - 1 or y > self.height:
             return None
         try:
             if self.tiles[x][y]:
@@ -90,13 +92,26 @@ class Map:
     def get_adjacent_tiles_by_pos(self, x, y):
         """ Returns a dict of adjacent tiles, with the key as the position, and the value as the tile. """
         adj_tiles = {}
-        for _y in range(y-1, y+2):
-            for _x in range(x-1, x+2):
+        for _y in range(y - 1, y + 2):
+            for _x in range(x - 1, x + 2):
                 try:
                     adj_tiles[(_x, _y)] = self.tiles[_x][_y]
                 except IndexError:
                     adj_tiles[(_x, _y)] = None
         adj_tiles[(x, y)] = None
+        return adj_tiles
+
+    def get_adj_tiles(self, tile):
+        """ Returns the tiles adjacent to the tile given. """
+        adj_tiles = {}
+        tile_x, tile_y = self.get_tile_pos(tile)
+        for y in range(tile_y - 1, tile_y + 2):
+            for x in range(tile_x - 1, tile_x + 2):
+                try:
+                    adj_tiles[(x, y)] = self.tiles[x][y]
+                except IndexError:
+                    adj_tiles[(x, y)] = None
+        adj_tiles[(tile_x, tile_y)] = None
         return adj_tiles
 
     def get_random_open_tile_pos(self, tiles=[]):

@@ -136,7 +136,14 @@ class Game:
 
     def settle_city(self, name, entity):
         """ Turn an entity into a city. """
-        self.game_map.add_tile(CityTile(name[1:], entity.team), entity.x, entity.y)
+        adj_tiles = self.game_map.get_adjacent_tiles_by_pos(entity.x, entity.y)
+        city = CityTile(name, entity.team)
+        for tile in adj_tiles.values():
+            if tile:
+                city.production_bonus += tile.production_bonus
+                city.food_bonus += tile.food_bonus
+
+        self.game_map.add_tile(city, entity.x, entity.y)
         self.remove_entity(entity)
 
     def _is_pos_blocked(self, x, y):

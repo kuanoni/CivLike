@@ -23,6 +23,11 @@ class GUI:
         self.console.print(1, 4, "Defense Bonus:", (255, 0, 0))
         self.console.print(16, 4, str(tile.defense_bonus))
 
+        self.console.print(1, 6, "Production:", (100, 200, 0))
+        self.console.print(13, 6, str(tile.production_bonus))
+        self.console.print(1, 7, "Food:", (100, 200, 0))
+        self.console.print(7, 7, str(tile.food_bonus))
+
     def render_inspect_entity(self, state):
         """ Render the inspect entity state gui. """
         entity = state.entity
@@ -66,7 +71,7 @@ class GUI:
     def render_settle_city(self, state):
         entity = state.entity
         self.console.print(1, 1, "Enter city name:")
-        self.console.print(1, 3, state.event_handler.city_name[1:])
+        self.console.print(1, 3, state.event_handler.city_name)
         self.console.hline(1, 4, self.width - 2)
 
         self.console.print(1, 38, "ESC:", (0, 255, 0))

@@ -20,7 +20,7 @@ class Engine:
         self.game = Game(self.root_console)
         self.event_handler = EventHandler(self.game)
         # self.save_game('save_map.dat')
-        self.load_game('save_map.dat')
+        # self.load_game('save_map.dat')
 
         self._map_fonts()
 

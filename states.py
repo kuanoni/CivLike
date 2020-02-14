@@ -67,6 +67,7 @@ class EventHandler(tcod.event.EventDispatch):
 
 class BaseEventHandler(EventHandler):
     """ Event handler for the base game. """
+
     def __init__(self, game):
         super().__init__(game)
 
@@ -99,6 +100,7 @@ class BaseEventHandler(EventHandler):
 
 class InspectEntityEventHandler(BaseEventHandler):
     """ Event handler for when an entity has been clicked and is being inspected. """
+
     def __init__(self, game):
         super().__init__(game)
 
@@ -110,7 +112,6 @@ class InspectEntityEventHandler(BaseEventHandler):
             self.game.set_state(Attack(self.game, entity))
         if event.sym == 109:  # M key
             self.game.set_state(MoveEntity(self.game, entity))
-
         if event.sym == 110 and entity.turn_into_tile:  # N key
             self.game.set_state(SettleCity(self.game, entity))
 
@@ -119,6 +120,7 @@ class InspectEntityEventHandler(BaseEventHandler):
 
 class MoveEntityEventHandler(EventHandler):
     """ Event handler for when the player decides to move an entity. """
+
     def __init__(self, game):
         super().__init__(game)
         self.path_cost = 0
@@ -147,11 +149,14 @@ class MoveEntityEventHandler(EventHandler):
         tcod.console_set_char_background(0, x, y, entity.fg_color)
         tcod.console_set_char_foreground(0, x, y, entity.fg_color)
 
+
 class SettleCityEventHandler(EventHandler):
     """ Event handler for when an entity is settling a city. """
+
     def __init__(self, game):
         super().__init__(game)
         self.city_name = ""
+        self.can_type = False
 
     def ev_keydown(self, event):
         """ ESC key: Cancels the SettleCity state and goes back to InspectEntity.
@@ -160,9 +165,11 @@ class SettleCityEventHandler(EventHandler):
         tile = self.game.game_map.get_tile_by_pos(entity.x, entity.y)
         if event.sym == 27 and entity.turn_into_tile:  # ESC key
             self.game.set_state(InspectEntity(self.game, entity, tile))
-        elif event.sym == 13 and len(self.city_name) > 1:
+        elif event.sym == 13 and len(self.city_name) > 1:  # ENTER key
             self.game.settle_city(self.city_name, entity)
             self.game.set_state(BaseState(self.game))
+        elif event.sym == 8:
+            self.city_name = self.city_name[:-1]
         else:
             pass
 
@@ -170,10 +177,20 @@ class SettleCityEventHandler(EventHandler):
 
     def ev_textinput(self, event):
         """ Allows user to type in the city name. """
-        self.city_name += event.text
+        if self.can_type:
+            self.city_name += event.text
+        else:
+            """ The 'N' press required to enter this state causes an 'N' to
+            immediately entered into this text input. This statement is required 
+            to prevent the city name from starting with 'N'. """
+            self.city_name = ""
+            self.can_type = True
+            return
+
 
 class AttackEventHandler(EventHandler):
     """ Event handler for when an entity is settling a city. """
+
     def __init__(self, game):
         super().__init__(game)
 
