@@ -1,6 +1,7 @@
 import tcod
 import tcod.event
 import tcod.console
+import pickle
 
 from event_handlers import EventHandler
 from game import Game
@@ -18,6 +19,8 @@ class Engine:
 
         self.game = Game(self.root_console)
         self.event_handler = EventHandler(self.game)
+        # self.save_game('save_map.dat')
+        self.load_game('save_map.dat')
 
         self._map_fonts()
 
@@ -29,7 +32,16 @@ class Engine:
 
             for event in tcod.event.wait():
                 self.game.state.event_handler.dispatch(event)
-                # self.event_handler.dispatch(event)
+
+    def save_game(self, path):
+        map = self.game.game_map.tiles
+        entities = self.game.team_entities
+        with open('saves/' + path, 'wb') as file:
+            pickle.dump([map, entities], file, protocol=2)
+
+    def load_game(self, path):
+        with open('saves/' + path, 'rb') as file:
+            self.game.game_map.tiles, self.game.team_entities = pickle.load(file)
 
     def _map_fonts(self):
         """ Map ASCII characters to the font map. """
