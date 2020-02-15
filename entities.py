@@ -10,6 +10,7 @@ class Entity:
         self.fg_color = team_colors[team]
 
         self.move_path = []
+        self.fov_radius = 2
 
         self.turn_into_tile = False
 

@@ -138,6 +138,7 @@ class MoveEntityEventHandler(EventHandler):
             x, y = event.tile.x, event.tile.y
             entity = self.game.state.entity
             path = self.game.get_entity_move_path(entity, x, y)
+            """ Make an unrevealed tile able to be pathed to. """
             if len(path) > 0:
                 entity.move_path = path
                 self.game.set_state(BaseState(self.game))

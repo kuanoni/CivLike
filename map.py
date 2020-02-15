@@ -1,3 +1,5 @@
+import tcod.console
+
 import map_generator
 from tile import Tile, ForestTile, WaterTile, HillTile, GroundTile, MountainTile
 import random
@@ -60,12 +62,18 @@ class Map:
 
         return valid_positions[-1]
 
-    def render(self, console):
-        """ Render the game map. """
+    def render(self, console: tcod.console.Console, entities):
+        """ Render the game map.
+        TODO:
+            - Render based on entity vision """
         for y in range(self.height):
             for x in range(self.width):
                 tile = self.tiles[x][y]
-                console.print(x, y, tile.char, tile.fg_color, tile.bg_color)
+                if tile.revealed:
+                    console.print(x, y, tile.char, tile.fg_color, tile.bg_color)
+                else:
+                    tcod.console_set_char_background(console, x, y, (50, 50, 50))
+                    tcod.console_set_char_foreground(console, x, y, (50, 50, 50))
 
     def get_tile_by_pos(self, x, y):
         """ Returns tile from map position. """
@@ -89,11 +97,11 @@ class Map:
             return
         self.tiles[x][y] = tile
 
-    def get_adjacent_tiles_by_pos(self, x, y):
+    def get_adjacent_tiles_by_pos(self, x, y, radius=1):
         """ Returns a dict of adjacent tiles, with the key as the position, and the value as the tile. """
         adj_tiles = {}
-        for _y in range(y - 1, y + 2):
-            for _x in range(x - 1, x + 2):
+        for _y in range(y - radius, y + radius + 1):
+            for _x in range(x - radius, x + radius + 1):
                 try:
                     adj_tiles[(_x, _y)] = self.tiles[_x][_y]
                 except IndexError:
@@ -101,12 +109,12 @@ class Map:
         adj_tiles[(x, y)] = None
         return adj_tiles
 
-    def get_adj_tiles(self, tile):
+    def get_adj_tiles(self, tile, radius=1):
         """ Returns the tiles adjacent to the tile given. """
         adj_tiles = {}
         tile_x, tile_y = self.get_tile_pos(tile)
-        for y in range(tile_y - 1, tile_y + 2):
-            for x in range(tile_x - 1, tile_x + 2):
+        for y in range(tile_y - radius, tile_y + radius + 1):
+            for x in range(tile_x - radius, tile_x + radius + 1):
                 try:
                     adj_tiles[(x, y)] = self.tiles[x][y]
                 except IndexError:

@@ -8,6 +8,7 @@ class Tile:
         self.fg_color = fg_color
         self.bg_color = bg_color
         self.blocked = blocked
+        self.revealed = False
 
         self.move_penalty = 100
         self.defense_bonus = 0

@@ -32,6 +32,7 @@ class Game:
         """ Adds entity. """
         if team and entity:
             self.team_entities[team].append(entity)
+            self.set_entity_fov(entity)
 
     def remove_entity(self, entity):
         """ Removes entity. """
@@ -78,6 +79,15 @@ class Game:
             entity.x, entity.y = move_to
             index = entity.move_path.index(move_to)
             entity.move_path = entity.move_path[index+1:]
+
+            self.set_entity_fov(entity)
+
+    def set_entity_fov(self, entity):
+        """ Sets the field of view for the entity. """
+        adj_tiles = self.game_map.get_adjacent_tiles_by_pos(entity.x, entity.y, entity.fov_radius)
+        adj_tiles[(entity.x, entity.y)] = self.game_map.get_tile_by_pos(entity.x, entity.y)
+        for tile in adj_tiles.values():
+            tile.revealed = True
 
     def get_entity_move_path(self, entity, dest_x, dest_y):
         """ Generate an A* path for an entity, to a destination. """
@@ -155,7 +165,7 @@ class Game:
 
     def render(self, root_console):
         """ Render to root console. """
-        self.game_map.render(self.game_console)
+        self.game_map.render(self.game_console, self.team_entities["RED_TEAM"])
         for team, entities in self.team_entities.items():
             for entity in entities:
                 self.game_console.print(entity.x, entity.y, entity.char, entity.fg_color)
