@@ -3,7 +3,6 @@ import tcod.event
 import tcod.console
 import pickle
 
-from event_handlers import EventHandler
 from game import Game
 
 class Engine:
@@ -18,7 +17,6 @@ class Engine:
         )
 
         self.game = Game(self.root_console)
-        self.event_handler = EventHandler(self.game)
         # self.save_game('save_map.dat')
         # self.load_game('save_map.dat')
 
@@ -53,6 +51,7 @@ class Engine:
         tcod.console_map_string_to_font("Ω", 10, 14)
         tcod.console_map_string_to_font("▲", 14, 1)
         tcod.console_map_string_to_font("◊", 4, 0)
+        tcod.console_map_string_to_font("∞", 12, 14)
 
 
 if __name__ == '__main__':

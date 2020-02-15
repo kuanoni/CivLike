@@ -20,6 +20,9 @@ class GUI:
         self.console.hline(1, 2, self.width - 2)
         self.console.print(1, 3, "Move Cost:", (255, 0, 0))
         self.console.print(12, 3, str(tile.move_penalty))
+        if tile.move_penalty == 100:
+            self.console.print(1, 3, "Move Cost:", (255, 0, 0))
+            self.console.print(12, 3, "∞")
         self.console.print(1, 4, "Defense Bonus:", (255, 0, 0))
         self.console.print(16, 4, str(tile.defense_bonus))
 
@@ -63,8 +66,6 @@ class GUI:
         entity = state.entity
         self.console.print(1, 1, entity.name, entity.fg_color)
         self.console.hline(1, 2, self.width - 2)
-        self.console.print(1, 3, "Move Cost:")
-        self.console.print(12, 3, str(state.event_handler.path_cost))
         self.console.print(1, 38, "ESC:", (0, 255, 0))
         self.console.print(5, 38, "Cancel move")
 

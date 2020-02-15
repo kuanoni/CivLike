@@ -36,7 +36,6 @@ class Game:
 
     def remove_entity(self, entity):
         """ Removes entity. """
-        entity_to_remove = None
         for team in self.team_entities.keys():
             for _entity in self.team_entities[team]:
                 if _entity is entity:
@@ -53,6 +52,7 @@ class Game:
         return None
 
     def get_entity_path_cost(self, entity, path=None):
+        """ Gets the total movement cost for en entity's path. """
         if path is None:
             path = entity.move_path
         move_costs = []
