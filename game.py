@@ -52,6 +52,7 @@ class Game:
         return None
 
     def get_entity_path_cost(self, entity, path=None):
+        """ Gets the total movement cost for en entity's path. """
         if path is None:
             path = entity.move_path
         move_costs = []
